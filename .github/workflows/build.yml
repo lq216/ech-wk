@@ -168,6 +168,19 @@ jobs:
           fi
         shell: bash
 
+      - name: Download China IP list
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "Downloading latest China IP list..."
+          curl -L -o chn_ip.txt "https://raw.githubusercontent.com/mayaxcn/china-ip-list/master/chn_ip.txt" || echo "Failed to download, will skip"
+          if [ -f "chn_ip.txt" ]; then
+            echo "✓ China IP list downloaded successfully"
+            wc -l chn_ip.txt
+          else
+            echo "⚠ China IP list download failed, release will continue without it"
+          fi
+        shell: bash
+
       - name: Prepare release files
         if: startsWith(github.ref, 'refs/tags/')
         run: |
@@ -175,6 +188,12 @@ jobs:
           
           # Go 可执行文件
           cp ech-workers${{ matrix.exe_ext }} release/
+          
+          # 中国IP列表文件（离线版本）
+          if [ -f "chn_ip.txt" ]; then
+            cp chn_ip.txt release/
+            echo "✓ China IP list included in release"
+          fi
           
           # GUI（仅桌面版）
           if [ "${{ matrix.enable_gui }}" = "true" ]; then
@@ -200,6 +219,9 @@ jobs:
             echo ""
             echo "Files:"
             echo "- ech-workers${{ matrix.exe_ext }}: Go compiled core proxy program"
+            if [ -f "release/chn_ip.txt" ]; then
+              echo "- chn_ip.txt: China IP list (offline version)"
+            fi
             if [ "${{ matrix.enable_gui }}" = "true" ]; then
               if [ "${{ matrix.goos }}" == "windows" ]; then
                 echo "- ECHWorkersGUI.exe: Python GUI client (standalone executable)"
